@@ -51,7 +51,7 @@ The following syntax is also supported:
 java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "target/sokoban-1.0-SNAPSHOT-jar-with-dependencies.jar" sokoban.SokobanMain --test test5.json
 ```
 
-The test filename must correspond to a JSON file in the project's `config` directory (for example, `config/test5.json`). The short filename is passed to the Codingame runner, which loads it from that directory.
+The test filename must correspond to a JSON file in the project's `config` directory (for example, `config/test5.json`). The code builds the path `config/<filename>` before passing it to the Codingame runner. Run the command from the project root so that the `config` directory can be found.
 
 The commands can be run from Windows PowerShell, Linux, or macOS, provided Java, Maven, and PDDL4J have been installed as described above.
 
