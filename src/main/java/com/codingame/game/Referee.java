@@ -21,7 +21,7 @@ public class Referee extends AbstractReferee {
 
     @Override
     public void init() {
-        gameManager.setFirstTurnMaxTime(60000);
+        gameManager.setFirstTurnMaxTime(20000);
         gameManager.setMaxTurns(400);
         gameManager.setFrameDuration(300);
 

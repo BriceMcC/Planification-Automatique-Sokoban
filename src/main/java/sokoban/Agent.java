@@ -12,11 +12,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 public class Agent {
     private static final String DOMAIN_RESOURCE = "/pddl/domain.pddl";
     private static final String PLANNER_MAIN_CLASS =
             "fr.uga.pddl4j.planners.statespace.HSP";
+    private static final Pattern PLAN_LINE = Pattern.compile(
+            "^\\s*\\d+\\s*:\\s*\\(\\s*(?:move|push)\\s.*\\s(up|down|left|right)\\s*\\)",
+            Pattern.CASE_INSENSITIVE);
 
     private static int boxCountGlobal = 0;
 
@@ -26,8 +30,6 @@ public class Agent {
         Path problemFile = null;
 
         try {
-            // Les ressources sont extraites dans le dossier temporaire du système.
-            // Le programme ne dépend donc pas du dossier dans lequel il est lancé.
             domainFile = copyDomainResourceToTemporaryFile();
             problemFile = Files.createTempFile("sokoban-problem-", ".pddl");
 
@@ -257,16 +259,19 @@ public class Agent {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     System.err.println(line);
-                    String lineLower = line.toLowerCase(Locale.ROOT);
+                    // Les lignes du plan contiennent des noms de cases ("loc-...")
+                    if (line.contains("loc-")) {
+                        // on garde le texte avant la parenthèse fermante, le dernier mot est la direction
+                        String action = line.substring(0, line.indexOf(')')).trim();
+                        String dir = action.substring(action.lastIndexOf(' ') + 1);
 
-                    if (lineLower.contains("(move ") || lineLower.contains("(push ")) {
-                        if (lineLower.contains("up")) {
+                        if (dir.equals("up")) {
                             planStr.append("U");
-                        } else if (lineLower.contains("down")) {
+                        } else if (dir.equals("down")) {
                             planStr.append("D");
-                        } else if (lineLower.contains("left")) {
+                        } else if (dir.equals("left")) {
                             planStr.append("L");
-                        } else if (lineLower.contains("right")) {
+                        } else if (dir.equals("right")) {
                             planStr.append("R");
                         }
                     }
