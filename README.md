@@ -7,11 +7,21 @@ Play the game on [CodinGame](https://www.codingame.com/training/hard/sokoban).
 - A JDK (Java 9 or newer is recommended).
 - Maven.
 
-PDDL4J is provided in the repository as `pddl4j-4.0.0.jar`. It is copied into the application resources during the Maven build, so no manual installation in the local Maven repository is needed.
+## Install PDDL4J
+
+The project uses PDDL4J 4.0.0. The JAR file `pddl4j-4.0.0.jar` is provided in the repository.
+
+Before building the project on a new computer, install this JAR in the local Maven repository by running the following command from the project root:
+
+```bash
+mvn install:install-file -Dfile=pddl4j-4.0.0.jar -DgroupId=fr.uga -DartifactId=pddl4j -Dversion=4.0.0 -Dpackaging=jar -DgeneratePom=true
+```
+
+This installation is local to the computer and only needs to be done once on each computer. The `pom.xml` already declares PDDL4J as a dependency; there is no need to modify it.
 
 ## Build
 
-Run from the root of the project:
+From the project root, run:
 
 ```bash
 mvn clean package
@@ -29,13 +39,13 @@ When no test is specified, the game uses `test2.json`:
 java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "target/sokoban-1.0-SNAPSHOT-jar-with-dependencies.jar" sokoban.SokobanMain
 ```
 
-Choose another level without changing the source code:
+To choose another level without modifying the source code, pass the test filename as an argument:
 
 ```bash
 java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "target/sokoban-1.0-SNAPSHOT-jar-with-dependencies.jar" sokoban.SokobanMain test5.json
 ```
 
-The following syntax also works:
+The following syntax is also supported:
 
 ```bash
 java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "target/sokoban-1.0-SNAPSHOT-jar-with-dependencies.jar" sokoban.SokobanMain --test test5.json
@@ -43,17 +53,16 @@ java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp
 
 The test filename must correspond to a JSON file in the project's `config` directory (for example, `config/test5.json`). The short filename is passed to the Codingame runner, which loads it from that directory.
 
-On Windows PowerShell, the same commands work. The classpath is written with forward slashes so it does not depend on Windows-specific backslashes.
+The commands can be run from Windows PowerShell, Linux, or macOS, provided Java, Maven, and PDDL4J have been installed as described above.
 
-## Portability
+## Portability notes
 
-- No Java source uses a path tied to a particular user's Windows account or project folder.
-- The PDDL domain is loaded from the classpath resource `/pddl/domain.pddl`.
-- The supplied PDDL4J JAR is bundled as `/lib/pddl4j-4.0.0.jar`; at runtime it is extracted to a temporary file and used to start the planner.
+- The Java code does not use a path tied to a particular Windows user or project directory.
+- The PDDL domain is loaded from the Java classpath resource `/pddl/domain.pddl` and copied to a temporary file because PDDL4J expects a file path.
 - The generated PDDL problem is written to a temporary file.
-- Java's executable is located from the active JDK, with the correct executable name for Windows or Unix-like systems.
-- Temporary files are deleted after the planner has finished.
+- The HSP planner is launched with the Java executable from the active JDK and the current Java classpath. PDDL4J is therefore found through the Maven dependency declared in `pom.xml`.
+- Temporary PDDL files are deleted after the planner has finished.
 
-The project keeps the existing Sokoban board, PDDL generation logic, and action extraction approach. The PDDL domain file itself is unchanged.
+The existing project structure, the Codingame dependencies, and the Maven configuration supplied for the course are kept. The `domain.pddl` file is unchanged.
 
-The `mvn exec:java` command is not used because the original setup reports an issue with the `src/main/resources/view/assets` directory.
+The `mvn exec:java` command is not used here because the existing setup reports an issue with the `src/main/resources/view/assets` directory.
