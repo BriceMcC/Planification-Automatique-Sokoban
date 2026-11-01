@@ -33,10 +33,7 @@ public class Agent {
             domainFile = copyDomainResourceToTemporaryFile();
             problemFile = Files.createTempFile("sokoban-problem-", ".pddl");
 
-            // 1. Lecture du niveau initial et génération du problème PDDL.
             convertCurrentLevelToPDDLProblem(input, problemFile.toString());
-
-            // 2. Lancement du planificateur HSP.
             String plan = runPlanner(domainFile.toString(), problemFile.toString());
 
             if (plan.isEmpty()) {
@@ -44,7 +41,6 @@ public class Agent {
                 return;
             }
 
-            // 3. Boucle de jeu : restituer les actions une par une au Referee.
             for (int i = 0; i < plan.length(); i++) {
                 System.out.println(plan.charAt(i));
 
@@ -67,10 +63,6 @@ public class Agent {
         }
     }
 
-    /**
-     * Copie le domaine PDDL embarqué dans les ressources vers un fichier temporaire.
-     * PDDL4J attend un chemin de fichier et non une ressource Java.
-     */
     private static Path copyDomainResourceToTemporaryFile() throws IOException {
         Path temporaryFile = Files.createTempFile("sokoban-domain-", ".pddl");
         boolean copied = false;
@@ -230,14 +222,6 @@ public class Agent {
             List<String> command = new ArrayList<>();
             command.add(javaExecutable);
 
-            // --add-opens n'existe pas sous Java 8 ; il est nécessaire sur les JDK modulaires.
-            if (isJavaNineOrNewer()) {
-                command.add("--add-opens");
-                command.add("java.base/java.lang=ALL-UNNAMED");
-            }
-
-            // PDDL4J est une dépendance Maven : on réutilise le classpath
-            // du programme courant pour que le planificateur retrouve ses classes.
             String classPath = System.getProperty("java.class.path");
             if (classPath == null || classPath.trim().isEmpty()) {
                 throw new IllegalStateException("Classpath Java introuvable.");
@@ -295,21 +279,4 @@ public class Agent {
         return planStr.toString();
     }
 
-    private static boolean isJavaNineOrNewer() {
-        String version = System.getProperty("java.specification.version", "8");
-        if (version.startsWith("1.")) {
-            version = version.substring(2);
-        }
-
-        int separator = version.indexOf('.');
-        if (separator >= 0) {
-            version = version.substring(0, separator);
-        }
-
-        try {
-            return Integer.parseInt(version) >= 9;
-        } catch (NumberFormatException e) {
-            return true;
-        }
-    }
 }

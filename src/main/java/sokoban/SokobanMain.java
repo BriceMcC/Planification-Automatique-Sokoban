@@ -16,13 +16,7 @@ public class SokobanMain {
         gameRunner.start();
     }
 
-    /**
-     * Accepte :
-     * - aucun argument : utilise le test par défaut ;
-     * - test3.json ;
-     * - --test test3.json ;
-     * - --test=test3.json.
-     */
+
     private static String getTestCase(String[] args) {
         if (args == null || args.length == 0) {
             return DEFAULT_TEST_CASE;
@@ -41,7 +35,6 @@ public class SokobanMain {
             );
         }
 
-        // On n'accepte qu'un nom de fichier, pas un chemin fourni par l'utilisateur.
         if (!testCase.matches("[A-Za-z0-9_-]+\\.json")) {
             throw new IllegalArgumentException(
                     "Nom de test invalide : " + testCase
