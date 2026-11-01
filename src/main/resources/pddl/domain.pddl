@@ -25,7 +25,7 @@
         )
         :effect (and
             (player-at ?to) ;Le joueur est maintenant sur la case ?to
-            (not (player-at ?from)) ;Le joueur n'est PLUS sur la case ?from
+            (not (player-at ?from)) ;Le joueur n'est plus sur la case ?from
             (clear ?from) ;La case ?from est maintenant libre
             (not (clear ?to)) ;La case ?to n'est plus libre
         )

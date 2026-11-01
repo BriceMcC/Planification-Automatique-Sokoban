@@ -157,7 +157,6 @@ public class Agent {
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
                     if (map[y][x] != '#') {
-                        // Déclaration des cases claires (ni joueur, ni caisse).
                         boolean isOccupied = (x == playerX && y == playerY);
                         for (int[] box : boxes) {
                             if (box[0] == x && box[1] == y) {
@@ -168,7 +167,6 @@ public class Agent {
                             writer.println("    (clear loc-" + x + "-" + y + ")");
                         }
 
-                        // Déclaration dynamique des adjacences jouables.
                         if (y > 0 && map[y - 1][x] != '#') {
                             writer.println("    (adjacent loc-" + x + "-" + y
                                     + " loc-" + x + "-" + (y - 1) + " up)");
@@ -194,7 +192,7 @@ public class Agent {
             writer.println("  (:goal (and");
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    // Les cibles sont signalées par '*' par le Board.
+                    // Les cibles sont signalées par '*'
                     if (map[y][x] == '*') {
                         writer.println("    (box-at loc-" + x + "-" + y + ")");
                     }
@@ -223,10 +221,6 @@ public class Agent {
             command.add(javaExecutable);
 
             String classPath = System.getProperty("java.class.path");
-            if (classPath == null || classPath.trim().isEmpty()) {
-                throw new IllegalStateException("Classpath Java introuvable.");
-            }
-
             command.add("-cp");
             command.add(classPath);
             command.add(PLANNER_MAIN_CLASS);

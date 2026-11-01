@@ -1,68 +1,109 @@
-# Sokoban
+# Sokoban – Planification automatique avec PDDL4J
 
-Play the game on [CodinGame](https://www.codingame.com/training/hard/sokoban).
+Agent Java qui résout automatiquement des niveaux de Sokoban : il lit la carte
+envoyée par le moteur de jeu CodinGame, la traduit en problème PDDL, appelle le
+planificateur **HSP** de PDDL4J, puis rejoue le plan obtenu coup par coup.
 
-## Prerequisites
+## Principe de fonctionnement
 
-- A JDK (Java 9 or newer is recommended).
+1. **Lecture du niveau** : au premier tour, l'agent reçoit la taille de la carte,
+   le nombre de caisses, la grille, la position du joueur et celle des caisses.
+2. **Génération du problème PDDL** : chaque case non murée devient un objet
+   `loc-x-y`. L'état initial décrit le joueur, les caisses, les cases libres et
+   les adjacences (`up`, `down`, `left`, `right`). Le but est que chaque case cible
+   contienne une caisse.
+3. **Planification** : le planificateur HSP est lancé dans un processus Java
+   séparé, avec le domaine `domain.pddl` et le problème généré.
+4. **Exécution** : pour chaque action du plan (`move` ou `push`), l'agent en
+   extrait la direction (dernier paramètre) et envoie `U`, `D`, `L` ou `R` au jeu.
+
+## Domaine PDDL
+
+Le fichier `src/main/resources/pddl/domain.pddl` définit :
+
+- les types `location` et `direction` ;
+- les prédicats `player-at`, `box-at`, `clear` et `adjacent` ;
+- l'action `move` : le joueur se déplace vers une case adjacente libre ;
+- l'action `push` : le joueur pousse une caisse vers la case libre située juste
+  derrière elle, dans la même direction.
+
+## Fichiers créés ou modifiés
+
+- `src/main/java/sokoban/Agent.java` : Implémentation de la boucle de jeu, traduction de la carte en problème PDDL dynamique, et exécution du planificateur HSP (PDDL4J).
+- `src/main/java/sokoban/SokobanMain.java` : Ajout du support des arguments en ligne de commande pour faciliter le choix du niveau à tester.
+- `src/main/java/com/codingame/game/Referee.java` : Augmentation du temps limite du premier tour à 24 999 ms pour laisser le maximum de temps au planificateur (la limite du moteur de jeu étant de 25 secondes).
+- `src/main/resources/pddl/domain.pddl` : Définition des règles du domaine Sokoban (prédicats, actions de déplacement et de poussée).
+- `pom.xml` : Ajout de la dépendance `fr.uga:pddl4j:4.0.0`.
+- `pddl4j-4.0.0.jar` : Archive fournie à la racine, requise pour l'installation locale. | Configuration Maven (dépendances du jeu et de PDDL4J) |
+
+## Prérequis
+
+- un JDK (Java 9 ou plus recommandé) ;
 - Maven.
 
-## Install PDDL4J
+## Installation
 
-The project uses PDDL4J 4.0.0. The JAR file `pddl4j-4.0.0.jar` is provided in the repository.
-
-Before building the project on a new computer, install this JAR in the local Maven repository by running the following command from the project root:
+PDDL4J 4.0.0 n'est pas récupérée automatiquement par Maven : le JAR fourni dans
+le dépôt doit d'abord être installé dans le dépôt Maven local de la machine.
+Depuis la racine du projet :
 
 ```bash
 mvn install:install-file -Dfile=pddl4j-4.0.0.jar -DgroupId=fr.uga -DartifactId=pddl4j -Dversion=4.0.0 -Dpackaging=jar -DgeneratePom=true
 ```
 
-This installation is local to the computer and only needs to be done once on each computer. The `pom.xml` already declares PDDL4J as a dependency; there is no need to modify it.
+Cette étape n'est à faire qu'une fois par ordinateur.
 
-## Build
+## Compilation
 
-From the project root, run:
+Depuis la racine du projet :
 
 ```bash
 mvn clean package
 ```
 
-The executable JAR is created at:
-
+Le JAR exécutable est créé ici :
 `target/sokoban-1.0-SNAPSHOT-jar-with-dependencies.jar`
 
-## Run
+## Exécution
 
-When no test is specified, the game uses `test2.json`:
+Toujours lancer les commandes **depuis la racine du projet**, afin que le dossier
+`config` soit trouvé.
+
+Niveau par défaut (`test2.json`) :
 
 ```bash
 java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "target/sokoban-1.0-SNAPSHOT-jar-with-dependencies.jar" sokoban.SokobanMain
 ```
 
-To choose another level without modifying the source code, pass the test filename as an argument:
+Choisir un autre niveau sans modifier le code, en passant le nom du fichier :
 
 ```bash
-java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "target/sokoban-1.0-SNAPSHOT-jar-with-dependencies.jar" sokoban.SokobanMain test5.json
+java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "target/sokoban-1.0-SNAPSHOT-jar-with-dependencies.jar" sokoban.SokobanMain test4.json
 ```
 
-The following syntax is also supported:
+La syntaxe `--test test4.json` (ou `--test=test4.json`) est aussi acceptée. Le
+fichier doit exister dans le dossier `config` (par exemple `config/test4.json`).
 
-```bash
-java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "target/sokoban-1.0-SNAPSHOT-jar-with-dependencies.jar" sokoban.SokobanMain --test test5.json
-```
+Une fois le programme lancé, ouvrir <http://localhost:8888/test.html> dans un
+navigateur pour voir le jeu. En cas d'affichage d'un ancien niveau, vérifier
+qu'aucun ancien processus Java n'est encore actif sur le port 8888 et recharger
+la page avec Ctrl+F5.
 
-The test filename must correspond to a JSON file in the project's `config` directory (for example, `config/test5.json`). The code builds the path `config/<filename>` before passing it to the Codingame runner. Run the command from the project root so that the `config` directory can be found.
+## Portabilité
 
-The commands can be run from Windows PowerShell, Linux, or macOS, provided Java, Maven, and PDDL4J have been installed as described above.
+- Aucun chemin absolu n'est utilisé dans le code.
+- Le domaine PDDL est lu depuis les ressources du JAR, puis copié dans un fichier
+  temporaire (PDDL4J attend un chemin de fichier). Le problème généré est lui
+  aussi écrit dans un fichier temporaire.
+- Les fichiers temporaires sont supprimés à la fin de l'exécution.
+- HSP est lancé avec le Java du JDK actif et le classpath du programme courant.
 
-## Portability notes
+## Limite connue
 
-- The Java code does not use a path tied to a particular Windows user or project directory.
-- The PDDL domain is loaded from the Java classpath resource `/pddl/domain.pddl` and copied to a temporary file because PDDL4J expects a file path.
-- The generated PDDL problem is written to a temporary file.
-- The HSP planner is launched with the Java executable from the active JDK and the current Java classpath. PDDL4J is therefore found through the Maven dependency declared in `pom.xml`.
-- Temporary PDDL files are deleted after the planner has finished.
+- Tout le calcul du plan se fait pendant le premier tour, dont la durée maximale
+  est fixée à 24.9 s dans `Referee.java` (le moteur de jeu refuse plus de 25 s). Un
+  niveau très difficile peut donc dépasser ce délai.
 
-The existing project structure, the Codingame dependencies, and the Maven configuration supplied for the course are kept. The `domain.pddl` file is unchanged.
+## Auteur
 
-The `mvn exec:java` command is not used here because the existing setup reports an issue with the `src/main/resources/view/assets` directory.
+Brice MC CARTHY
