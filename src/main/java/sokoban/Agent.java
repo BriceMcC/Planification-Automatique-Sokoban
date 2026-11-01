@@ -2,14 +2,12 @@ package sokoban;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -17,7 +15,6 @@ import java.util.Scanner;
 
 public class Agent {
     private static final String DOMAIN_RESOURCE = "/pddl/domain.pddl";
-    private static final String PLANNER_JAR_RESOURCE = "/lib/pddl4j-4.0.0.jar";
     private static final String PLANNER_MAIN_CLASS =
             "fr.uga.pddl4j.planners.statespace.HSP";
 
@@ -26,27 +23,19 @@ public class Agent {
     public static void main(String[] args) {
         Scanner input = new Scanner(System.in);
         Path domainFile = null;
-        Path plannerJarFile = null;
         Path problemFile = null;
 
         try {
             // Les ressources sont extraites dans le dossier temporaire du système.
             // Le programme ne dépend donc pas du dossier dans lequel il est lancé.
-            domainFile = copyResourceToTemporaryFile(
-                    DOMAIN_RESOURCE, "sokoban-domain-", ".pddl");
-            plannerJarFile = copyResourceToTemporaryFile(
-                    PLANNER_JAR_RESOURCE, "sokoban-pddl4j-", ".jar");
+            domainFile = copyDomainResourceToTemporaryFile();
             problemFile = Files.createTempFile("sokoban-problem-", ".pddl");
 
             // 1. Lecture du niveau initial et génération du problème PDDL.
             convertCurrentLevelToPDDLProblem(input, problemFile.toString());
 
             // 2. Lancement du planificateur HSP.
-            String plan = runPlanner(
-                    domainFile.toString(),
-                    problemFile.toString(),
-                    plannerJarFile.toString()
-            );
+            String plan = runPlanner(domainFile.toString(), problemFile.toString());
 
             if (plan.isEmpty()) {
                 System.err.println("Aucun plan trouvé !");
@@ -72,27 +61,26 @@ public class Agent {
             e.printStackTrace();
         } finally {
             deleteTemporaryFile(problemFile);
-            deleteTemporaryFile(plannerJarFile);
             deleteTemporaryFile(domainFile);
         }
     }
 
     /**
-     * Copie une ressource embarquée dans le JAR vers un fichier temporaire.
-     * PDDL4J attend des chemins de fichiers pour le domaine et le problème.
+     * Copie le domaine PDDL embarqué dans les ressources vers un fichier temporaire.
+     * PDDL4J attend un chemin de fichier et non une ressource Java.
      */
-    private static Path copyResourceToTemporaryFile(
-            String resourceName, String prefix, String suffix) throws IOException {
-        Path temporaryFile = Files.createTempFile(prefix, suffix);
+    private static Path copyDomainResourceToTemporaryFile() throws IOException {
+        Path temporaryFile = Files.createTempFile("sokoban-domain-", ".pddl");
         boolean copied = false;
 
-        try (InputStream resource = Agent.class.getResourceAsStream(resourceName)) {
-            if (resource == null) {
-                throw new IOException("Ressource introuvable dans l'application : "
-                        + resourceName);
+        try (java.io.InputStream domainStream =
+                     Agent.class.getResourceAsStream(DOMAIN_RESOURCE)) {
+            if (domainStream == null) {
+                throw new IOException("Ressource PDDL introuvable : " + DOMAIN_RESOURCE);
             }
 
-            Files.copy(resource, temporaryFile, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(domainStream, temporaryFile,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             copied = true;
             return temporaryFile;
         } finally {
@@ -227,8 +215,7 @@ public class Agent {
         }
     }
 
-    public static String runPlanner(
-            String domainFilename, String problemFilename, String plannerJarFilename) {
+    public static String runPlanner(String domainFilename, String problemFilename) {
         StringBuilder planStr = new StringBuilder();
 
         try {
@@ -247,8 +234,15 @@ public class Agent {
                 command.add("java.base/java.lang=ALL-UNNAMED");
             }
 
+            // PDDL4J est une dépendance Maven : on réutilise le classpath
+            // du programme courant pour que le planificateur retrouve ses classes.
+            String classPath = System.getProperty("java.class.path");
+            if (classPath == null || classPath.trim().isEmpty()) {
+                throw new IllegalStateException("Classpath Java introuvable.");
+            }
+
             command.add("-cp");
-            command.add(plannerJarFilename);
+            command.add(classPath);
             command.add(PLANNER_MAIN_CLASS);
             command.add(domainFilename);
             command.add(problemFilename);
