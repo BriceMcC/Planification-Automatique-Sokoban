@@ -10,9 +10,10 @@ public class SokobanMain {
 
         SoloGameRunner gameRunner = new SoloGameRunner();
         gameRunner.setAgent(Agent.class);
-        gameRunner.setTestCase(testCase);
+        String testCasePath = "config/" + testCase;
+        gameRunner.setTestCase(testCasePath);
 
-        System.out.println("Test Sokoban sélectionné : " + testCase);
+        System.out.println("Test Sokoban sélectionné : " + testCasePath);
         gameRunner.start();
     }
 
